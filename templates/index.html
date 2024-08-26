@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bitcoin Address Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            text-align: center;
+        }
+        header {
+            background-color: #333;
+            color: #fff;
+            padding: 10px 0;
+        }
+        #generateButton {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        #generateButton:disabled {
+            background-color: #cccccc;
+        }
+        #addresses {
+            margin-top: 20px;
+            max-height: 500px;
+            overflow-y: scroll;
+            background-color: #fff;
+            padding: 10px;
+            border: 1px solid #ddd;
+        }
+        .address-item {
+            margin: 10px 0;
+            font-family: monospace;
+        }
+        .form-group {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            font-size: 16px;
+            width: 250px;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Bitcoin Address Generator</h1>
+    </header>
+    <section>
+        <h2>Generate Bitcoin Address</h2>
+        <form id="rangeForm">
+        <div class="form-group">
+            
+            <input type="text" id="range" name="range" placeholder="Enter range (e.g., 1:10000)" required>
+        </div>
+        <div class="form-group">
+            <input type="text" id="targetAddress" name="targetAddress" placeholder="Enter target address (optional)">
+        </div>
+            <button type="submit" id="generateButton">Generate</button>
+        </form>
+    </section>
+    <div id="addresses"></div>
+
+    <script>
+        document.getElementById('rangeForm').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent form from submitting the traditional way
+            generateAddresses();
+        });
+
+        function generateAddresses() {
+            const range = document.getElementById('range').value;
+            const targetAddress = document.getElementById('targetAddress').value;
+            document.getElementById('generateButton').disabled = true;
+            document.getElementById('addresses').innerHTML = 'Generating addresses, please wait...';
+
+            fetch(`/generate?range=${range}&targetAddress=${targetAddress}`)
+                .then(response => response.json())
+                .then(data => {
+                    let addressesDiv = document.getElementById('addresses');
+                    addressesDiv.innerHTML = '';
+
+                    if (data.match) {
+                        addressesDiv.innerHTML = `Address found!<br>Private Key: ${data.match.private_key}<br>Address: ${data.match.address}`;
+                    } else {
+                        data.forEach((item, index) => {
+                            let addressItem = document.createElement('div');
+                            addressItem.className = 'address-item';
+                            addressItem.textContent = `${index + 1}. Private Key: ${item.private_key} | Address: ${item.address}`;
+                            addressesDiv.appendChild(addressItem);
+                        });
+                        if (data.length === 0) {
+                            addressesDiv.innerHTML = 'No addresses generated.';
+                        } else if (!targetAddress) {
+                            addressesDiv.innerHTML += '<br>No matching address found.';
+                        }
+                    }
+
+                    document.getElementById('generateButton').disabled = false;
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('addresses').innerHTML = 'Error generating addresses. Please try again.';
+                    document.getElementById('generateButton').disabled = false;
+                });
+        }
+    </script>
+</body>
+</html>
